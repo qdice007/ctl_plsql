@@ -9,6 +9,8 @@
 --     ctl
 -- 数据库对象列表:
 --     系统配置表     ctl_sys_conf_tbl
+--     系统日志表     ctl_sys_logs_tbl
+--     系统历史表     ctl_sys_hist_ptb
 --     任务配置表     ctl_task_conf_tbl
 --     任务实例表     ctl_task_inst_tbl
 --     任务日志表     ctl_task_logs_tbl
@@ -73,6 +75,8 @@ GRANT ALL ON DBMS_LOCK TO ctl ;
 -- 删除所有表
 --------------------------------------------------------------------------------
 DROP TABLE ctl.ctl_sys_conf_tbl ;
+DROP TABLE ctl.ctl_sys_logs_tbl ;
+DROP TABLE ctl.ctl_sys_hist_ptb ;
 DROP TABLE ctl.ctl_task_conf_tbl ;
 DROP TABLE ctl.ctl_task_inst_tbl ;
 DROP TABLE ctl.ctl_task_logs_tbl ;
@@ -87,6 +91,138 @@ DROP TABLE ctl.ctl_sfile_sum_tbl ;
 DROP TABLE ctl.ctl_sfile_hist_ptb ;
 DROP TABLE ctl.ctl_holiday_conf_tbl ;
 DROP TABLE ctl.ctl_meta_dict_tbl ;
+
+
+----------------------------------------------------------------------------------------------------
+-- 表名: ctl_sys_logs_tbl
+-- 描述: 系统日志
+-- 注意: 无
+----------------------------------------------------------------------------------------------------
+CREATE TABLE ctl_sys_logs_tbl
+  ( data_date   VARCHAR2(8) NOT NULL
+   ,pkg_name    VARCHAR2(100) NOT NULL
+   ,prc_name    VARCHAR2(100) NOT NULL
+   ,prc_desc    VARCHAR2(200)
+   ,caller      VARCHAR2(100) DEFAULT 'CTL'
+   ,obj_name    VARCHAR2(500)
+   ,start_time  TIMESTAMP(6) NOT NULL
+   ,end_time    TIMESTAMP(6)
+   ,run_time    NUMBER(20,2)
+   ,row_count   NUMBER(20) DEFAULT 0 NOT NULL
+   ,run_state   CHAR(1) NOT NULL
+   ,err_cd      VARCHAR2(10)
+   ,err_msg     VARCHAR2(4000)
+   ,sys_name    VARCHAR2(50) NOT NULL
+  )
+  TABLESPACE ctl_data_ts ;
+
+-- 添加表注释 
+COMMENT ON TABLE ctl_sys_logs_tbl
+  IS 'CTL-T-系统日志';
+
+-- 添加字段注释 
+COMMENT ON COLUMN ctl_sys_logs_tbl.data_date
+  IS '跑批数据日期';
+COMMENT ON COLUMN ctl_sys_logs_tbl.pkg_name
+  IS '存储过程包名';
+COMMENT ON COLUMN ctl_sys_logs_tbl.prc_name
+  IS '存储过程名';
+COMMENT ON COLUMN ctl_sys_logs_tbl.prc_desc
+  IS '处理过程描述';
+COMMENT ON COLUMN ctl_sys_logs_tbl.caller
+  IS '调用者';
+COMMENT ON COLUMN ctl_sys_logs_tbl.obj_name
+  IS '处理的主要目标对象名';
+COMMENT ON COLUMN ctl_sys_logs_tbl.start_time
+  IS '程序运行开始时间';
+COMMENT ON COLUMN ctl_sys_logs_tbl.end_time
+  IS '程序运行结束时间';
+COMMENT ON COLUMN ctl_sys_logs_tbl.run_time
+  IS '程序运行耗时(单位分钟)';
+COMMENT ON COLUMN ctl_sys_logs_tbl.row_count
+  IS '数据处理条数';
+COMMENT ON COLUMN ctl_sys_logs_tbl.run_state
+  IS '程序运行状态(R正在运行 S成功结束 F失败)';
+COMMENT ON COLUMN ctl_sys_logs_tbl.err_cd
+  IS '错误代码';
+COMMENT ON COLUMN ctl_sys_logs_tbl.err_msg
+  IS '报错信息';
+COMMENT ON COLUMN ctl_sys_logs_tbl.sys_name
+  IS '数据所属系统名称';
+
+-- 添加主键/外键/索引
+ALTER TABLE ctl_sys_logs_tbl
+  ADD CONSTRAINT ctl_sys_logs_pk 
+  PRIMARY KEY (data_date, pkg_name, prc_name, obj_name, start_time, sys_name)
+  USING INDEX 
+  TABLESPACE ctl_idx_ts ;
+
+
+----------------------------------------------------------------------------------------------------
+-- 表名: ctl_sys_hist_ptb
+-- 描述: 系统历史(日志归档)
+-- 注意: 无
+----------------------------------------------------------------------------------------------------
+CREATE TABLE ctl_sys_hist_ptb
+  ( data_date   VARCHAR2(8) NOT NULL
+   ,pkg_name    VARCHAR2(100) NOT NULL
+   ,prc_name    VARCHAR2(100) NOT NULL
+   ,prc_desc    VARCHAR2(200)
+   ,caller      VARCHAR2(100) DEFAULT 'CTL'
+   ,obj_name    VARCHAR2(500)
+   ,start_time  DATE NOT NULL
+   ,end_time    DATE
+   ,run_time    NUMBER(20,2)
+   ,row_count   NUMBER(20) DEFAULT 0 NOT NULL
+   ,run_state   CHAR(1) NOT NULL
+   ,err_cd      VARCHAR2(10)
+   ,err_msg     VARCHAR2(4000)
+   ,sys_name    VARCHAR2(50) NOT NULL
+  )
+-- !!!!还需要规划和定义表分区
+  TABLESPACE ctl_data_ts ;
+
+-- 添加表注释 
+COMMENT ON TABLE ctl_sys_hist_ptb
+  IS 'CTL-T-系统历史';
+
+-- 添加字段注释 
+COMMENT ON COLUMN ctl_sys_hist_ptb.data_date
+  IS '跑批数据日期';
+COMMENT ON COLUMN ctl_sys_hist_ptb.pkg_name
+  IS '存储过程包名';
+COMMENT ON COLUMN ctl_sys_hist_ptb.prc_name
+  IS '存储过程名';
+COMMENT ON COLUMN ctl_sys_hist_ptb.prc_desc
+  IS '处理过程描述';
+COMMENT ON COLUMN ctl_sys_hist_ptb.caller
+  IS '调用者';
+COMMENT ON COLUMN ctl_sys_hist_ptb.obj_name
+  IS '处理的主要目标对象名';
+COMMENT ON COLUMN ctl_sys_hist_ptb.start_time
+  IS '程序运行开始时间';
+COMMENT ON COLUMN ctl_sys_hist_ptb.end_time
+  IS '程序运行结束时间';
+COMMENT ON COLUMN ctl_sys_hist_ptb.run_time
+  IS '程序运行耗时(单位分钟)';
+COMMENT ON COLUMN ctl_sys_hist_ptb.row_count
+  IS '数据处理条数';
+COMMENT ON COLUMN ctl_sys_hist_ptb.run_state
+  IS '程序运行状态(R正在运行 S成功结束 F失败)';
+COMMENT ON COLUMN ctl_sys_hist_ptb.err_cd
+  IS '错误代码';
+COMMENT ON COLUMN ctl_sys_hist_ptb.err_msg
+  IS '报错信息';
+COMMENT ON COLUMN ctl_sys_hist_ptb.sys_name
+  IS '数据所属系统名称';
+
+-- 添加主键/外键/索引
+ALTER TABLE ctl_sys_hist_ptb
+  ADD CONSTRAINT ctl_sys_hist_pk 
+  PRIMARY KEY (data_date, pkg_name, prc_name, obj_name, start_time, sys_name)
+  USING INDEX 
+  TABLESPACE ctl_idx_ts ;
+
 
 --------------------------------------------------------------------------------
 -- 表名: ctl_sys_conf_tbl
